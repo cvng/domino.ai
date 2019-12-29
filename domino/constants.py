@@ -1,7 +1,3 @@
-DELAY = 0
-
-FIRST_PLAY = (6, 6)
-
 DOMINOES = [
     (0, 0),
     (0, 1),
@@ -34,3 +30,7 @@ DOMINOES = [
 ]
 
 PLAYERS = 4
+
+FIRST_PLAY = (0, 0)
+
+DELAY = 0

@@ -8,10 +8,10 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level="INFO")
 
 
-def domino_run_game():
+def run(runs=1):
     history = {}
 
-    for _ in range(100):
+    for _ in range(runs):
         game = Game()
         game.run()
         winner = game.winner
@@ -27,4 +27,4 @@ def domino_run_game():
 
 
 if __name__ == "__main__":
-    domino_run_game()
+    run()

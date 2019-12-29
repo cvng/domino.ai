@@ -22,6 +22,8 @@ def basic_strategy(strategy: callable) -> callable:
             choice = choice[::-1]
         elif state and i == -1 and choice[0] != state[-1][1]:
             choice = choice[::-1]
+        if i == -1:
+            i = len(state)
         return choice, i
 
     return fn
@@ -62,4 +64,13 @@ def random_picker(state: list, choices: list) -> tuple:
         return possibilities.pop(randrange(len(possibilities)))
 
 
-tested_strategy = naive_ltr
+@basic_strategy
+def player_input(state: list, choices: list) -> tuple:
+    txt = ", ".join(["%s:%s" % (i, c) for i, c in enumerate(choices)])
+    inp = input("What to play? %s: " % txt)
+    if inp:
+        i, d = inp.split()
+        return int(i), int(d)
+
+
+tested_strategy = random_picker

@@ -10,11 +10,17 @@ class Player:
         self.hand = []
         self.strategy = strategy or default_strategy
 
+    def __repr__(self):
+        return f"<Player #{self.id}: {self.hand}>"
+
     def play(self, table):
         result = self.strategy(table, self.hand)
         if result:
             domino, i = result
-            self.hand.pop(i)
+            try:
+                self.hand.pop(self.hand.index(domino))
+            except ValueError:
+                self.hand.pop(self.hand.index(domino[::-1]))
             return domino, i
 
     def pick(self, domino):

@@ -46,9 +46,8 @@ class Game:
         logger.info("PLAYERS: %s" % PLAYERS)
         logger.info("dom_per_player: %s" % dominoes_per_player)
 
-        strategy = None
-
         for i in range(1, PLAYERS + 1):
+            strategy = None
             if i == 1:
                 strategy = tested_strategy
 
@@ -59,7 +58,7 @@ class Game:
 
             assert len(player.hand) == dominoes_per_player
 
-            logger.info("player.hand (%s): %s" % (i, player.hand))
+            logger.info(player)
 
             self.players.append(player)
 
@@ -71,12 +70,12 @@ class Game:
         """
         logger.info("\n\n--> Game loop")
 
-        game_locked = 0
+        locked_counter = 0
 
         while self.winner is None:
             for player in self.players:
-                logger.info("Game.table: %s" % self.table)
-                logger.info("player %s: %s" % (player.id, player.hand))
+                logger.info("\nGame.table: %s" % self.table)
+                logger.info(player)
 
                 sleep(DELAY)
 
@@ -85,11 +84,14 @@ class Game:
 
                 # Can we play?
                 if result:
-                    logger.info("Player #%s: PLAY!" % player.id)
+                    logger.info("%s --> PLAY! %s" % (player, result))
+                    locked_counter = 0  # reset counter
 
                     domino_to_play, index_to_insert = result
 
                     # Run checks
+                    assert domino_to_play not in self.table
+                    assert domino_to_play[::-1] not in self.table
                     if self.table and index_to_insert == 0:
                         assert domino_to_play[-1] == self.table[0][0]
                     elif self.table and index_to_insert == -1:
@@ -98,16 +100,14 @@ class Game:
                     # Play
                     self.table.insert(index_to_insert, domino_to_play)
 
-                    # Reset game_locked counter
-                    game_locked = 0
-
-                    logger.info("domino_to_play #%s: %s" % (player.id, domino_to_play))
-                    logger.info("player.hand #%s: %s" % (player.id, player.hand))
+                    if self.table and len(self.table) > 1:
+                        for i in range(len(self.table) - 1):
+                            assert self.table[i][1] == self.table[i + 1][0]
 
                 # Has nothing changed?
                 else:
-                    logger.info("Player #%s: PASS!" % player.id)
-                    game_locked = game_locked + 1
+                    logger.info("%s --> PASS! %s" % (player, result))
+                    locked_counter = locked_counter + 1  # inc counter
 
                 # Do we have a winner?
                 if len(player.hand) == 0:
@@ -116,10 +116,10 @@ class Game:
                     break
 
                 # Is the game locked?
-                if len(self.players) == game_locked:
+                if locked_counter >= len(self.players):
                     break
 
-            if len(self.players) == game_locked:
+            if locked_counter >= len(self.players):
                 logger.info("game_locked: GAME LOCKED!")
                 ranking = sorted(self.players, key=lambda p: p.total)
                 self.winner = ranking[-1]
