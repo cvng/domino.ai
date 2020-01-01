@@ -22,8 +22,6 @@ def basic_strategy(strategy: callable) -> callable:
             choice = choice[::-1]
         elif state and i == -1 and choice[0] != state[-1][1]:
             choice = choice[::-1]
-        if i == -1:
-            i = len(state)
         return choice, i
 
     return fn

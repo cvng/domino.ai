@@ -1,4 +1,12 @@
-DOMINOES = [
+from typing import List, Tuple, Dict
+
+State = Dict
+
+Player = Dict
+
+Domino = Tuple[int, int]
+
+DOMINOES: List[Domino] = [
     (0, 0),
     (0, 1),
     (0, 2),
@@ -29,8 +37,8 @@ DOMINOES = [
     (6, 6),
 ]
 
-PLAYERS = 4
+FIRST_PLAY: Domino = (0, 0)
 
-FIRST_PLAY = (0, 0)
+PLAYERS: int = 4
 
-DELAY = 0
+DELAY: int = 0
