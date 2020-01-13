@@ -8,6 +8,7 @@ import gym
 from gym import spaces
 from gym.utils import seeding
 
+
 pack: list = [
     (0, 0),
     (0, 1),
@@ -40,101 +41,109 @@ pack: list = [
 ]
 
 
-def valid_move(table: list, hand: list, indice: [int, None]) -> bool:
+def valid_move(table: list, hand: list, domino: [tuple, None]) -> bool:
     """
-    >>> valid_move([0], [1, 2, 3, 4, 5, 6, 7], 0)
+    >>> valid_move([(0, 0)], [(0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6), (1, 1)], (0, 0))
     False
-    >>> valid_move([0], [1, 2, 3, 4, 5, 6, 7], 8)
+    >>> valid_move([(0, 0)], [(0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6), (1, 1)], (1, 2))
     False
-    >>> valid_move([], [0, 2, 3, 4, 5, 6, 7], 2)
+    >>> valid_move([], [(0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6), (1, 1)], (0, 1))
     False
-    >>> valid_move([0], [1, 2, 3, 4, 5, 6, 7], 7)
+    >>> valid_move([(0, 0)], [(0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6), (1, 1)], (1, 1))
     False
-    >>> valid_move([0], [1, 2, 3, 4, 5, 6, 7], None)
-    False
-    >>> valid_move([], [0, 2, 3, 4, 5, 6, 7], 0)
+    >>> valid_move([], [(0, 0), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6), (1, 1)], (0, 0))
     True
     """
 
+    # domino should be played if possible
+    if not domino:
+        if possibilities(table, hand):
+            return False
+        else:
+            return True
+
     # domino already played
-    if indice in table:
+    if domino in table or domino[::-1] in table:
         return False
 
     # domino not in hand
-    if indice not in hand:
+    if not (domino in hand or domino[::-1] in hand):
         return False
 
     # domino to be played first is (0, 0) aka pack[0]
-    if len(table) == 0 and indice != 0:
+    if len(table) == 0 and domino != pack[0]:
         return False
 
     # domino do not match what is on table
-    if insert_index(table, indice) is None:
-        return False
-
-    # domino should be played if possible
-    if indice is None and len(possibilities(table, hand)) > 0:
+    if insert_index(table, domino) is None:
         return False
 
     return True
 
 
-def insert_index(table: list, indice: int) -> [int, None]:
+def insert_index(table: list, domino: tuple) -> [int, None]:
     """
-    >>> insert_index([], 0)
-    0
-    >>> insert_index([0], 1)
-    0
-    >>> insert_index([0, 1], 7)
-    2
-    >>> insert_index([0], 7) is None
+    >>> insert_index([], (0, 0))
+    (0, (0, 0))
+    >>> insert_index([(0, 0)], (0, 1))
+    (0, (1, 0))
+    >>> insert_index([(0, 0), (0, 1)], (2, 1))
+    (2, (1, 2))
+    >>> insert_index([(0, 0)], (1, 1)) is None
     True
     """
     if len(table) == 0:
-        return 0
+        return 0, domino
 
-    first_domino = _indice_to_domino(table[0])
-    last_domino = _indice_to_domino(table[-1])
-    domino = _indice_to_domino(indice)
+    first_domino = table[0]
+    last_domino = table[-1]
 
-    if first_domino[0] in domino:
-        return 0
+    if first_domino[0] == domino[1]:
+        return 0, domino
 
-    if last_domino[1] in domino:
-        return len(table)
+    elif first_domino[0] == domino[0]:
+        return 0, domino[::-1]
+
+    elif last_domino[1] == domino[0]:
+        return len(table), domino
+
+    elif last_domino[1] == domino[1]:
+        return len(table), domino[::-1]
 
     return None
 
 
 def possibilities(table: list, hand: list):
     """
-    >>> possibilities([0], [1, 2, 3, 4, 5, 6, 7])
-    [1, 2, 3, 4, 5, 6]
+    >>> possibilities([(4, 0), (0, 0), (0, 2)], [(3, 4), (2, 5), (4, 4), (2, 6), (1, 3), (3, 5), (0, 5)])
+    [(3, 4), (2, 5), (4, 4), (2, 6)]
     """
-    return [indice for indice in hand if insert_index(table, indice) is not None]
+    return [domino for domino in hand if valid_move(table, hand, domino)]
 
 
-def _domino_to_indice(domino: tuple) -> int:
+def _domino_to_action(domino: tuple) -> int:
     """
-    >>> _domino_to_indice((0,0))
-    0
-    >>> _domino_to_indice((1, 0))
+    >>> _domino_to_action((0,0))
     1
+    >>> _domino_to_action((1, 0))
+    2
     """
     try:
-        return pack.index(domino)
+        return pack.index(domino) + 1
     except ValueError:
-        return pack.index(domino[::-1])
+        return pack.index(domino[::-1]) + 1
 
 
-def _indice_to_domino(indice: int) -> tuple:
+def _action_to_domino(action: int) -> [tuple, None]:
     """
-    >>> _indice_to_domino(0)
+    >>> _action_to_domino(1)
     (0, 0)
-    >>> _indice_to_domino(1)
+    >>> _action_to_domino(2)
     (0, 1)
     """
-    return pack[indice]
+    if action == 0:
+        return None
+    return pack[action - 1]
 
 
 class DominoEnv(gym.Env):
@@ -149,6 +158,19 @@ class DominoEnv(gym.Env):
     The domino gaming pieces make up a domino set, sometimes called a deck or pack.
     The traditional Sino-European domino set consists of 28 dominoes,
     featuring all combinations of spot counts between zero and six.
+
+    Action meaning:
+        0 = skip turn (NOOP)
+        1-28 = play tile
+
+    Observation meaning:
+        0 = not seen (not in current_hand + not in table)
+        1 = in hand
+        2 = anywhere on table except rightmost/leftmost
+        3 = first in table in pack order
+        4 = first in table in reverse pack order
+        5 = last in table in pack order
+        6 = last in table in reverse pack order
     """
 
     def __init__(self):
@@ -159,8 +181,8 @@ class DominoEnv(gym.Env):
         self.table = []
 
         self.np_random = None
-        self.action_space = spaces.Discrete(28)
-        self.observation_space = spaces.Tuple((spaces.Discrete(3),) * 28)
+        self.action_space = spaces.Discrete(28 + 1)
+        self.observation_space = spaces.Tuple((spaces.Discrete(6),) * 28)
 
         self.seed()
         self.reset()
@@ -172,16 +194,23 @@ class DominoEnv(gym.Env):
     def step(self, action: int):
         assert self.action_space.contains(action)
 
+        domino = _action_to_domino(action)
+
         current_hand = self.players[self.current_turn]
 
-        assert valid_move(self.table, hand=current_hand, indice=action) is True
+        assert valid_move(self.table, hand=current_hand, domino=domino) is True
 
-        if action is not None:
+        if domino:
             # hit: add a tile to table and reset locked_counter
-            self.table.insert(
-                index=insert_index(self.table, action), object=current_hand.pop(action)
-            )
             self.locked_counter = 0
+            try:
+                domino_index = current_hand.index(domino)
+            except ValueError:
+                domino_index = current_hand.index(domino[::-1])
+            index_to_insert, domino_to_play = insert_index(
+                table=self.table, domino=current_hand.pop(domino_index)
+            )
+            self.table.insert(index_to_insert, domino_to_play)
 
         else:
             # stick: inc the locked_counter, until nb_players is reached
@@ -201,7 +230,7 @@ class DominoEnv(gym.Env):
             done = False
             reward = 0
 
-        self.current_turn += 1
+        self.current_turn = (self.current_turn + 1) % self.nb_players
 
         return self._get_obs(), reward, done, {}
 
@@ -211,7 +240,7 @@ class DominoEnv(gym.Env):
         self.players = []
         self.table = []
 
-        game_pack = [_domino_to_indice(domino) for domino in pack]
+        game_pack = [domino for domino in pack]
         hand_size = len(game_pack) // self.nb_players
 
         self.np_random.shuffle(game_pack)
@@ -225,26 +254,46 @@ class DominoEnv(gym.Env):
         if mode == "human":
             output = ""
 
-            table = [_indice_to_domino(indice) for indice in self.table]
-            output += "Table: %s\n" % table
+            output += "Table: %s\n" % self.table
 
             for i, hand in enumerate(self.players):
-                hand = [_indice_to_domino(indice) for indice in hand]
-                output += "Player %s: %s\n" % (i, hand)
+                current = "<-" if self.current_turn == i else ""
+                output += "Player %s: %s %s\n" % (i, hand, current)
+
+            output += "locked_counter: %s\n" % self.locked_counter
 
             print(output)
 
     def _get_obs(self):
+        observation = []
+
         table = self.table
         current_hand = self.players[self.current_turn]
 
-        observation = []
         for domino in pack:
-            indice = _domino_to_indice(domino)
-            if indice in table:
-                observation.append(2)
-            elif indice in current_hand:
+            if domino in table or domino[::-1] in table:
+                first_domino = table[0]
+                last_domino = table[-1]
+
+                if last_domino == domino[::-1]:
+                    observation.append(6)
+
+                elif last_domino == domino:
+                    observation.append(5)
+
+                elif first_domino == domino[::-1]:
+                    observation.append(4)
+
+                elif first_domino == domino:
+                    observation.append(3)
+
+                else:
+                    observation.append(2)
+
+            elif domino in current_hand or domino[::-1] in current_hand:
                 observation.append(1)
+
             else:
                 observation.append(0)
+
         return observation
