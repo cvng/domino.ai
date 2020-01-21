@@ -6,7 +6,7 @@ Permalink: https://github.com/cvng/domino.ai
 
 import numpy as np
 
-from domino.domino import possibilities, dtoa, atod, pack
+from domino import possibilities, dtoa, atod, pack
 from q_table import (
     insert_q_value,
     select_max_q_value,

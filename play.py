@@ -4,7 +4,7 @@ import time
 from collections import Counter
 
 from agents import TrainableAgent
-from domino.domino import DominoEnv
+from domino import DominoEnv
 
 logger = logging.getLogger(__name__)
 
