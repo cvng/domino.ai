@@ -4,10 +4,12 @@ Gym Environment: cvng/Domino-v0
 Permalink: https://github.com/cvng/domino.ai
 """
 
+from typing import Optional
+
 import gym
+import numpy as np
 from gym import spaces
 from gym.utils import seeding
-
 
 pack: list = [
     (0, 0),
@@ -41,7 +43,7 @@ pack: list = [
 ]
 
 
-def valid_move(table: list, hand: list, domino: [tuple, None]) -> bool:
+def valid_move(table: list, hand: list, domino: Optional[tuple]) -> bool:
     """
     >>> valid_move([(0, 0)], [(0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6), (1, 1)], (0, 0))
     False
@@ -81,7 +83,7 @@ def valid_move(table: list, hand: list, domino: [tuple, None]) -> bool:
     return True
 
 
-def insert_index(table: list, domino: tuple) -> [int, None]:
+def insert_index(table: list, domino: tuple) -> Optional[tuple]:
     """
     >>> insert_index([], (0, 0))
     (0, (0, 0))
@@ -98,14 +100,14 @@ def insert_index(table: list, domino: tuple) -> [int, None]:
     first_domino = table[0]
     last_domino = table[-1]
 
-    if first_domino[0] == domino[1]:
-        return 0, domino
-
-    elif first_domino[0] == domino[0]:
+    if first_domino[0] == domino[0]:
         return 0, domino[::-1]
 
     elif last_domino[1] == domino[0]:
         return len(table), domino
+
+    elif first_domino[0] == domino[1]:
+        return 0, domino
 
     elif last_domino[1] == domino[1]:
         return len(table), domino[::-1]
@@ -121,29 +123,36 @@ def possibilities(table: list, hand: list):
     return [domino for domino in hand if valid_move(table, hand, domino)]
 
 
-def _domino_to_action(domino: tuple) -> int:
+def dtoa(domino: tuple, pack_size: int = len(pack)) -> int:
     """
-    >>> _domino_to_action((0,0))
+    >>> dtoa((0,0))
     1
-    >>> _domino_to_action((1, 0))
+    >>> dtoa((0, 1))
     2
+    >>> dtoa((1, 0), pack_size=28)
+    30
     """
     try:
-        return pack.index(domino) + 1
+        return pack.index(domino) + 1  # domino to action
     except ValueError:
-        return pack.index(domino[::-1]) + 1
+        return pack.index(domino[::-1]) + pack_size + 1
 
 
-def _action_to_domino(action: int) -> [tuple, None]:
+def atod(action: int, pack_size=len(pack)) -> Optional[tuple]:
     """
-    >>> _action_to_domino(1)
+    >>> atod(1)
     (0, 0)
-    >>> _action_to_domino(2)
+    >>> atod(2)
     (0, 1)
+    >>> atod(30, pack_size=28)
+    (1, 0)
     """
     if action == 0:
         return None
-    return pack[action - 1]
+    domino = pack[action % pack_size - 1]
+    if action > pack_size:
+        domino = domino[::-1]
+    return domino  # action to domino
 
 
 class DominoEnv(gym.Env):
@@ -163,28 +172,29 @@ class DominoEnv(gym.Env):
         0 = skip turn (NOOP)
         1-28 = play tile
 
-    Observation meaning:
+    Observation meaning (unraveled):
+        [0:27] -> 3 possible values:
         0 = not seen (not in current_hand + not in table)
-        1 = in hand
-        2 = anywhere on table except rightmost/leftmost
-        3 = first in table in pack order
-        4 = first in table in reverse pack order
-        5 = last in table in pack order
-        6 = last in table in reverse pack order
+        1 = in current_hand
+        2 = in table
+        [28] -> 7 possible values:
+        0-6 = leftmost number in table
+        [29] -> 7 possible values:
+        1-6 = rightmost number in table
     """
 
     def __init__(self):
         self.locked_counter = 0
         self.current_turn = 0
-        self.nb_players = 4
+        self.n_players = 4
         self.players = []
         self.table = []
 
         self.np_random = None
-        self.action_space = spaces.Discrete(28 + 1)
-        self.observation_space = spaces.Tuple((spaces.Discrete(6),) * 28)
+        self.action_space = spaces.Discrete(len(pack) * 2 + 1)
+        self.observation_space = spaces.Discrete(1120962830293088)  # FIXME: compute n
 
-        self.seed()
+        self.seed(0)  # FIXME: remove seed
         self.reset()
 
     def seed(self, seed=None):
@@ -192,9 +202,28 @@ class DominoEnv(gym.Env):
         return [seed]
 
     def step(self, action: int):
+        from agents import RandomAgent
+
+        assert self.current_turn == 0
+        observation, reward, done, info = self._play(action)
+
+        if not done:
+            for player in range(1, self.n_players):
+                agent = RandomAgent(self.action_space, self.np_random)
+                action = agent.act(observation, reward, done)
+
+                assert self.current_turn == player
+                observation, reward, done, info = self._play(action)
+
+                if done:
+                    break
+
+        return observation, reward, done, info
+
+    def _play(self, action: int):
         assert self.action_space.contains(action)
 
-        domino = _action_to_domino(action)
+        domino = atod(action)
 
         current_hand = self.players[self.current_turn]
 
@@ -204,33 +233,33 @@ class DominoEnv(gym.Env):
             # hit: add a tile to table and reset locked_counter
             self.locked_counter = 0
             try:
-                domino_index = current_hand.index(domino)
+                current_hand.pop(current_hand.index(domino))
             except ValueError:
-                domino_index = current_hand.index(domino[::-1])
+                current_hand.pop(current_hand.index(domino[::-1]))
             index_to_insert, domino_to_play = insert_index(
-                table=self.table, domino=current_hand.pop(domino_index)
+                table=self.table, domino=domino
             )
             self.table.insert(index_to_insert, domino_to_play)
 
         else:
-            # stick: inc the locked_counter, until nb_players is reached
+            # stick: inc the locked_counter, until n_players is reached
             self.locked_counter += 1
 
         if len(current_hand) <= 0:
             # done: (neat) win by playing
             done = True
-            reward = 1
+            reward = 1 if self.current_turn == 0 else -1
 
-        elif self.locked_counter >= self.nb_players:
+        elif self.locked_counter >= self.n_players:
             # done: (cheat) win by scoring
             done = True
-            reward = 0
+            reward = -1
 
         else:
             done = False
             reward = 0
 
-        self.current_turn = (self.current_turn + 1) % self.nb_players
+        self.current_turn = (self.current_turn + 1) % self.n_players
 
         return self._get_obs(), reward, done, {}
 
@@ -241,12 +270,14 @@ class DominoEnv(gym.Env):
         self.table = []
 
         game_pack = [domino for domino in pack]
-        hand_size = len(game_pack) // self.nb_players
+        hand_size = len(game_pack) // self.n_players
 
         self.np_random.shuffle(game_pack)
 
         for i in range(0, len(game_pack), hand_size):
             self.players.append(game_pack[i : i + hand_size])
+
+        assert all(len(player) == hand_size for player in self.players)
 
         return self._get_obs()
 
@@ -272,23 +303,7 @@ class DominoEnv(gym.Env):
 
         for domino in pack:
             if domino in table or domino[::-1] in table:
-                first_domino = table[0]
-                last_domino = table[-1]
-
-                if last_domino == domino[::-1]:
-                    observation.append(6)
-
-                elif last_domino == domino:
-                    observation.append(5)
-
-                elif first_domino == domino[::-1]:
-                    observation.append(4)
-
-                elif first_domino == domino:
-                    observation.append(3)
-
-                else:
-                    observation.append(2)
+                observation.append(2)
 
             elif domino in current_hand or domino[::-1] in current_hand:
                 observation.append(1)
@@ -296,4 +311,13 @@ class DominoEnv(gym.Env):
             else:
                 observation.append(0)
 
-        return observation
+        if table:
+            leftmost_n, rightmost_n = table[0][0], table[-1][1]
+            observation += [leftmost_n, rightmost_n]
+        else:
+            observation += [0, 0]
+
+        # https://docs.scipy.org/doc/numpy/reference/generated/numpy.ravel_multi_index.html
+        observation = np.ravel_multi_index(observation, dims=(*(3,) * len(pack), 7, 7))
+
+        return int(observation)
