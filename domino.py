@@ -4,14 +4,16 @@ Gym Environment: cvng/Domino-v0
 Permalink: https://github.com/cvng/domino.ai
 """
 
-from typing import Optional
+from typing import Optional, List, Tuple
 
 import gym
 import numpy as np
 from gym import spaces
 from gym.utils import seeding
 
-pack: list = [
+Domino = Tuple[int, int]
+
+pack: List[Domino] = [
     (0, 0),
     (0, 1),
     (0, 2),
@@ -43,7 +45,9 @@ pack: list = [
 ]
 
 
-def valid_move(table: list, hand: list, domino: Optional[tuple]) -> bool:
+def valid_move(
+    table: List[Domino], hand: List[Domino], domino: Optional[Domino]
+) -> bool:
     """
     >>> valid_move([(0, 0)], [(0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6), (1, 1)], (0, 0))
     False
@@ -83,7 +87,7 @@ def valid_move(table: list, hand: list, domino: Optional[tuple]) -> bool:
     return True
 
 
-def insert_index(table: list, domino: tuple) -> Optional[tuple]:
+def insert_index(table: List[Domino], domino: Domino) -> Optional[Tuple[int, Domino]]:
     """
     >>> insert_index([], (0, 0))
     (0, (0, 0))
@@ -115,7 +119,7 @@ def insert_index(table: list, domino: tuple) -> Optional[tuple]:
     return None
 
 
-def possibilities(table: list, hand: list):
+def possibilities(table: List[Domino], hand: List[Domino]) -> List[Domino]:
     """
     >>> possibilities([(4, 0), (0, 0), (0, 2)], [(3, 4), (2, 5), (4, 4), (2, 6), (1, 3), (3, 5), (0, 5)])
     [(3, 4), (2, 5), (4, 4), (2, 6)]
@@ -123,7 +127,7 @@ def possibilities(table: list, hand: list):
     return [domino for domino in hand if valid_move(table, hand, domino)]
 
 
-def dtoa(domino: tuple, pack_size: int = len(pack)) -> int:
+def dtoa(domino: Domino, pack_size: int = len(pack)) -> int:
     """
     >>> dtoa((0,0))
     1
@@ -138,7 +142,7 @@ def dtoa(domino: tuple, pack_size: int = len(pack)) -> int:
         return pack.index(domino[::-1]) + pack_size + 1
 
 
-def atod(action: int, pack_size=len(pack)) -> Optional[tuple]:
+def atod(action: int, pack_size: int = len(pack)) -> Optional[Domino]:
     """
     >>> atod(1)
     (0, 0)
@@ -197,7 +201,7 @@ class DominoEnv(gym.Env):
         self.seed(0)  # FIXME: remove seed
         self.reset()
 
-    def seed(self, seed=None):
+    def seed(self, seed: int = None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
@@ -281,7 +285,7 @@ class DominoEnv(gym.Env):
 
         return self._get_obs()
 
-    def render(self, mode="human"):
+    def render(self, mode: str = "human"):
         if mode == "human":
             output = ""
 
