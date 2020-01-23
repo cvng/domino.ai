@@ -18,30 +18,30 @@ pack: List[Domino] = [
     (0, 1),
     (0, 2),
     (0, 3),
-    (0, 4),
-    (0, 5),
-    (0, 6),
+    # (0, 4),
+    # (0, 5),
+    # (0, 6),
     (1, 1),
     (1, 2),
     (1, 3),
-    (1, 4),
-    (1, 5),
-    (1, 6),
+    # (1, 4),
+    # (1, 5),
+    # (1, 6),
     (2, 2),
     (2, 3),
-    (2, 4),
-    (2, 5),
-    (2, 6),
+    # (2, 4),
+    # (2, 5),
+    # (2, 6),
     (3, 3),
-    (3, 4),
-    (3, 5),
-    (3, 6),
-    (4, 4),
-    (4, 5),
-    (4, 6),
-    (5, 5),
-    (5, 6),
-    (6, 6),
+    # (3, 4),
+    # (3, 5),
+    # (3, 6),
+    # (4, 4),
+    # (4, 5),
+    # (4, 6),
+    # (5, 5),
+    # (5, 6),
+    # (6, 6),
 ]
 
 
@@ -190,26 +190,27 @@ class DominoEnv(gym.Env):
     def __init__(self):
         self.locked_counter = 0
         self.current_turn = 0
-        self.n_players = 4
+        self.n_players = 2
         self.players = []
         self.table = []
+        self.winner = None
 
         self.np_random = None
         self.action_space = spaces.Discrete(len(pack) * 2 + 1)
         self.observation_space = spaces.Discrete(1120962830293088)  # FIXME: compute n
 
-        self.seed(0)  # FIXME: remove seed
+        self.seed()
         self.reset()
 
     def seed(self, seed: int = None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def step(self, action: int):
+    def _step(self, action: int):  # FIXME: refactor _step()
         from agents import RandomAgent
 
         assert self.current_turn == 0
-        observation, reward, done, info = self._play(action)
+        observation, reward, done, info = self.step(action)
 
         if not done:
             for player in range(1, self.n_players):
@@ -217,14 +218,14 @@ class DominoEnv(gym.Env):
                 action = agent.act(observation, reward, done)
 
                 assert self.current_turn == player
-                observation, reward, done, info = self._play(action)
+                observation, reward, done, info = self.step(action)
 
                 if done:
                     break
 
         return observation, reward, done, info
 
-    def _play(self, action: int):
+    def step(self, action: int):
         assert self.action_space.contains(action)
 
         domino = atod(action)
@@ -236,10 +237,12 @@ class DominoEnv(gym.Env):
         if domino:
             # hit: add a tile to table and reset locked_counter
             self.locked_counter = 0
+
             try:
                 current_hand.pop(current_hand.index(domino))
             except ValueError:
                 current_hand.pop(current_hand.index(domino[::-1]))
+
             index_to_insert, domino_to_play = insert_index(
                 table=self.table, domino=domino
             )
@@ -251,11 +254,13 @@ class DominoEnv(gym.Env):
 
         if len(current_hand) <= 0:
             # done: (neat) win by playing
+            self.winner = self.current_turn
             done = True
-            reward = 1 if self.current_turn == 0 else -1
+            reward = 10  # if self.current_turn == 0 else -10
 
         elif self.locked_counter >= self.n_players:
             # done: (cheat) win by scoring
+            self.winner = -1
             done = True
             reward = -1
 
@@ -272,6 +277,7 @@ class DominoEnv(gym.Env):
         self.current_turn = 0
         self.players = []
         self.table = []
+        self.winner = None
 
         game_pack = [domino for domino in pack]
         hand_size = len(game_pack) // self.n_players
@@ -296,6 +302,7 @@ class DominoEnv(gym.Env):
                 output += "Player %s: %s %s\n" % (i, hand, current)
 
             output += "locked_counter: %s\n" % self.locked_counter
+            output += "winner: %s\n" % self.winner
 
             print(output)
 

@@ -3,7 +3,7 @@ import logging
 import time
 from collections import Counter
 
-from agents import TrainableAgent
+from agents import TrainableAgent, RandomAgent
 from domino import DominoEnv
 
 logger = logging.getLogger(__name__)
@@ -17,14 +17,16 @@ def play(episodes=10000, training=True, debug=False):
     time_start = time.time()
 
     for i_episode in range(episodes):
-        agents_args = (training, env.action_space, env.np_random)
+        # env.seed(0)
+
+        agents_args = (training, env.action_space)
         agents = [
             TrainableAgent(*agents_args),
-            # TrainableAgent(*agents_args),
+            RandomAgent(*agents_args),
             # TrainableAgent(*agents_args),
             # TrainableAgent(*agents_args),
         ]
-        # env.n_players = len(agents)
+        env.n_players = len(agents)
 
         observation, reward, done, info = env.reset(), 0, False, {}
         logger.debug("observation=%s reward=%s done=%s" % (observation, reward, done))
@@ -49,7 +51,9 @@ def play(episodes=10000, training=True, debug=False):
 
                 agent.act(observation, reward, done)  # reward agent
 
-                history.append(current_turn if reward > 0 else -1)
+                history.append(
+                    current_turn if reward > 0 else -1  # 1 if reward == -10 else -1
+                )
                 ranking = [
                     "%s: %s%% (%s)" % (k, round(100 * v / (i_episode + 1), 2), v)
                     for k, v in sorted(Counter(history).items())

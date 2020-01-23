@@ -5,6 +5,7 @@ Permalink: https://github.com/cvng/domino.ai
 """
 
 import numpy as np
+from gym.utils import seeding
 
 from domino import possibilities, dtoa, atod, pack
 from q_table import (
@@ -17,8 +18,9 @@ from q_table import (
 
 
 class BaseAgent:
-    def __init__(self, action_space, np_random=None):
-        self.np_random = np_random
+    def __init__(self, training=True, action_space=None, np_random=None):
+        self.training = training
+        self.np_random = np_random or seeding.np_random()[0]
         self.action_space = action_space
 
     def act(self, observation, reward, done):
@@ -76,7 +78,7 @@ class RandomAgent(BaseAgent):
 
 
 class TrainableAgent(RandomAgent):
-    def __init__(self, training=True, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.action_history = []
@@ -86,7 +88,7 @@ class TrainableAgent(RandomAgent):
         # Hyperparameters
         self.alpha = 0.1
         self.gamma = 0.6
-        self.epsilon = 0.1 if training else 0
+        self.epsilon = 0.1 if self.training else 0
 
     def act(self, observation, reward, done):
         fallback_action = super().act(observation, reward, done)

@@ -1,8 +1,10 @@
 import sqlite3
 
+from domino import pack
+
 DB = sqlite3.connect("q_table.db")
 
-action_space_n = 57
+action_space_n = len(pack) * 2 + 1
 
 action_columns = ", ".join([f"action_{action}" for action in range(action_space_n + 1)])
 
