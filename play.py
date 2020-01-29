@@ -3,7 +3,7 @@ import logging
 import time
 from collections import Counter
 
-from agents import TrainableAgent, RandomAgent
+from agents import TrainableAgent
 from domino import DominoEnv
 
 logger = logging.getLogger(__name__)
@@ -12,7 +12,7 @@ logging.basicConfig(level="INFO")
 
 
 def play(episodes=10000, training=True, debug=False):
-    env = DominoEnv()
+    env = DominoEnv(n_players=1)
     history = []
     time_start = time.time()
 
@@ -22,11 +22,10 @@ def play(episodes=10000, training=True, debug=False):
         agents_args = (training, env.action_space)
         agents = [
             TrainableAgent(*agents_args),
-            RandomAgent(*agents_args),
+            # RandomAgent(*agents_args),
             # TrainableAgent(*agents_args),
             # TrainableAgent(*agents_args),
         ]
-        env.n_players = len(agents)
 
         observation, reward, done, info = env.reset(), 0, False, {}
         logger.debug("observation=%s reward=%s done=%s" % (observation, reward, done))
@@ -62,8 +61,8 @@ def play(episodes=10000, training=True, debug=False):
                 if (i_episode + 1) % 100 == 0:
                     time_elapsed = round(time.time() - time_start, 2)
                     logger.info(
-                        "DONE! episodes=%s steps=%s ranking=%s time_elapsed=%s"
-                        % (i_episode + 1, i_step + 1, ranking, time_elapsed)
+                        "DONE! episodes=%s steps=%s time_elapsed=%s ranking=%s"
+                        % (i_episode + 1, i_step + 1, time_elapsed, ranking)
                     )
                 break
 

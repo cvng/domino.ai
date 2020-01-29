@@ -18,25 +18,25 @@ pack: List[Domino] = [
     (0, 1),
     (0, 2),
     (0, 3),
-    # (0, 4),
+    (0, 4),
     # (0, 5),
     # (0, 6),
     (1, 1),
     (1, 2),
     (1, 3),
-    # (1, 4),
+    (1, 4),
     # (1, 5),
     # (1, 6),
     (2, 2),
     (2, 3),
-    # (2, 4),
+    (2, 4),
     # (2, 5),
     # (2, 6),
     (3, 3),
-    # (3, 4),
+    (3, 4),
     # (3, 5),
     # (3, 6),
-    # (4, 4),
+    (4, 4),
     # (4, 5),
     # (4, 6),
     # (5, 5),
@@ -187,10 +187,10 @@ class DominoEnv(gym.Env):
         1-6 = rightmost number in table
     """
 
-    def __init__(self):
+    def __init__(self, n_players=4):
         self.locked_counter = 0
         self.current_turn = 0
-        self.n_players = 2
+        self.n_players = n_players
         self.players = []
         self.table = []
         self.winner = None
@@ -206,11 +206,11 @@ class DominoEnv(gym.Env):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def _step(self, action: int):  # FIXME: refactor _step()
+    def step(self, action: int):
         from agents import RandomAgent
 
         assert self.current_turn == 0
-        observation, reward, done, info = self.step(action)
+        observation, reward, done, info = self._play(action)
 
         if not done:
             for player in range(1, self.n_players):
@@ -218,14 +218,14 @@ class DominoEnv(gym.Env):
                 action = agent.act(observation, reward, done)
 
                 assert self.current_turn == player
-                observation, reward, done, info = self.step(action)
+                observation, reward, done, info = self._play(action)
 
                 if done:
                     break
 
         return observation, reward, done, info
 
-    def step(self, action: int):
+    def _play(self, action: int):
         assert self.action_space.contains(action)
 
         domino = atod(action)
@@ -256,7 +256,7 @@ class DominoEnv(gym.Env):
             # done: (neat) win by playing
             self.winner = self.current_turn
             done = True
-            reward = 10  # if self.current_turn == 0 else -10
+            reward = 10 if self.current_turn == 0 else -10
 
         elif self.locked_counter >= self.n_players:
             # done: (cheat) win by scoring

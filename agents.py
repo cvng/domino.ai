@@ -97,6 +97,10 @@ class TrainableAgent(RandomAgent):
             # Explore action space.
             action = fallback_action
 
+        # elif select_max_q_value(observation) == 0:
+            # Explore action with no values.
+            # action = fallback_action
+
         else:
             # Exploit learned values.
             action = select_max_action(observation)
