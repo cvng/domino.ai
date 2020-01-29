@@ -1,9 +1,9 @@
-from agents.base_agent import BaseAgent
+from agents.base import BaseAgent
 from envs.domino import atod
 
 
 class HumanAgent(BaseAgent):
-    def act(self, observation, reward, done):
+    def forward(self, observation):
         legal_actions = self._get_legal_actions(observation)
         description = "\n".join(
             ["%s: %s" % (action, atod(action)) for action in sorted(legal_actions)]

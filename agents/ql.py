@@ -1,4 +1,4 @@
-from agents.random_agent import RandomAgent
+from agents.base import BaseAgent
 from agents.utils.q_table import (
     select_max_action,
     select_q_value,
@@ -8,7 +8,7 @@ from agents.utils.q_table import (
 )
 
 
-class TrainableAgent(RandomAgent):
+class QLAgent(BaseAgent):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -21,16 +21,13 @@ class TrainableAgent(RandomAgent):
         self.gamma = 0.6
         self.epsilon = 0.1 if self.training else 0
 
-    def act(self, observation, reward, done):
-        fallback_action = super().act(observation, reward, done)
+    def forward(self, observation):
+        legal_actions = self._get_legal_actions(observation)
+        fallback_action = legal_actions[self.np_random.choice(len(legal_actions))]
 
         if self.np_random.uniform(0, 1) < self.epsilon:
             # Explore action space.
             action = fallback_action
-
-        # elif select_max_q_value(observation) == 0:
-        # Explore action with no values.
-        # action = fallback_action
 
         else:
             # Exploit learned values.
@@ -38,14 +35,19 @@ class TrainableAgent(RandomAgent):
             if action not in self._get_legal_actions(observation):
                 action = fallback_action
 
-        if self.observation_history:
-            self._maximize_q_value(observation, reward)
-
         # Book-keeping.
         self.action_history.append(action)
         self.observation_history.append(observation)
 
         return action
+
+    def backward(self, reward, terminal=False):
+        if len(self.observation_history) > 1:
+            next_observation = self.observation_history.pop()
+            next_action = self.action_history.pop()
+            self._maximize_q_value(next_observation, reward)
+            self.observation_history.append(next_observation)
+            self.action_history.append(next_action)
 
     def _maximize_q_value(self, next_observation, reward):
         if self.next_observation_history:

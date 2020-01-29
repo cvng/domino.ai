@@ -6,18 +6,15 @@ Permalink: https://github.com/cvng/domino.ai
 
 import numpy as np
 from gym.utils import seeding
+from rl.core import Agent
 
 from envs.domino import possibilities, dtoa, atod, pack
 
 
-class BaseAgent:
-    def __init__(self, training=True, action_space=None, np_random=None):
-        self.training = training
-        self.np_random = np_random or seeding.np_random()[0]
-        self.action_space = action_space
-
-    def act(self, observation, reward, done):
-        raise NotImplementedError
+class BaseAgent(Agent):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.np_random, seed = seeding.np_random()
 
     def _get_legal_actions(self, observation):
         table, hand = self._parse_obs(observation)
@@ -50,3 +47,22 @@ class BaseAgent:
         table = first_domino + table + last_domino
 
         return table, hand
+
+    def forward(self, observation):
+        raise NotImplementedError
+
+    def backward(self, reward, terminal):
+        pass
+
+    def compile(self, optimizer, metrics=[]):
+        pass
+
+    def load_weights(self, filepath):
+        pass
+
+    def save_weights(self, filepath, overwrite=False):
+        pass
+
+    @property
+    def layers(self):
+        pass

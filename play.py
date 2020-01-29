@@ -5,27 +5,29 @@ from collections import Counter
 
 import gym
 
-from agents.trainable_agent import TrainableAgent
+from agents.ql import QLAgent
 
 logger = logging.getLogger(__name__)
 
 logging.basicConfig(level="INFO")
 
+ENV_NAME = "Domino-v0"
 
-def play(episodes=3000, training=False, debug=False):
-    env = gym.make("Domino-v0")
+
+def play(episodes=3000, debug=False):
+    env = gym.make(ENV_NAME)
     history = []
     time_start = time.time()
 
     for i_episode in range(episodes):
         # env.seed(0)
 
-        agents_args = (training, env.action_space)
+        agents_args = ()
         agents = [
-            TrainableAgent(*agents_args),
+            QLAgent(*agents_args),
             # RandomAgent(*agents_args),
-            # TrainableAgent(*agents_args),
-            # TrainableAgent(*agents_args),
+            # QLAgent(*agents_args),
+            # QLAgent(*agents_args),
         ]
 
         observation, reward, done, info = env.reset(), 0, False, {}
@@ -38,7 +40,7 @@ def play(episodes=3000, training=False, debug=False):
             current_turn = i_step % len(agents)
             agent = agents[current_turn]
 
-            action = agent.act(observation, reward, done)
+            action = agent.forward(observation)
             logger.debug("action=%s" % action)
 
             observation, reward, done, info = env.step(action)
@@ -46,10 +48,10 @@ def play(episodes=3000, training=False, debug=False):
                 "observation=%s reward=%s done=%s" % (observation, reward, done)
             )
 
+            agent.backward(reward, terminal=done)  # reward agent
+
             if done:
                 env.render(mode="human" if debug else None)
-
-                agent.act(observation, reward, done)  # reward agent
 
                 history.append(
                     current_turn if reward > 0 else -1  # 1 if reward == -10 else -1
@@ -77,7 +79,4 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("episodes", type=int, nargs="?")
     args = parser.parse_args()
-    gym.envs.register(
-        id="Domino-v0", entry_point="envs.domino:DominoEnv", kwargs={"n_players": 1}
-    )
     play(*[arg for arg in vars(args).values() if arg])

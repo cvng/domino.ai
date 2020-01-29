@@ -187,10 +187,10 @@ class DominoEnv(gym.Env):
         1-6 = rightmost number in table
     """
 
-    def __init__(self, n_players=4):
+    def __init__(self):
         self.locked_counter = 0
         self.current_turn = 0
-        self.n_players = n_players
+        self.n_players = 1  # FIXME: set 4
         self.players = []
         self.table = []
         self.winner = None
@@ -207,7 +207,7 @@ class DominoEnv(gym.Env):
         return [seed]
 
     def step(self, action: int):
-        from agents.random_agent import RandomAgent
+        from agents.random import RandomAgent
 
         assert self.current_turn == 0
         observation, reward, done, info = self._play(action)
@@ -215,10 +215,12 @@ class DominoEnv(gym.Env):
         if not done:
             for player in range(1, self.n_players):
                 agent = RandomAgent(self.action_space, self.np_random)
-                action = agent.act(observation, reward, done)
+                action = agent.forward(observation)
 
                 assert self.current_turn == player
                 observation, reward, done, info = self._play(action)
+
+                agent.backward(reward, terminal=done)
 
                 if done:
                     break
@@ -332,3 +334,6 @@ class DominoEnv(gym.Env):
         observation = np.ravel_multi_index(observation, dims=(*(3,) * len(pack), 7, 7))
 
         return int(observation)
+
+
+gym.envs.register(id="Domino-v0", entry_point="envs.domino:DominoEnv")
