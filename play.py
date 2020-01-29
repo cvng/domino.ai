@@ -3,16 +3,17 @@ import logging
 import time
 from collections import Counter
 
-from agents import TrainableAgent
-from domino import DominoEnv
+import gym
+
+from agents.trainable_agent import TrainableAgent
 
 logger = logging.getLogger(__name__)
 
 logging.basicConfig(level="INFO")
 
 
-def play(episodes=10000, training=True, debug=False):
-    env = DominoEnv(n_players=1)
+def play(episodes=3000, training=False, debug=False):
+    env = gym.make("Domino-v0")
     history = []
     time_start = time.time()
 
@@ -76,4 +77,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("episodes", type=int, nargs="?")
     args = parser.parse_args()
+    gym.envs.register(
+        id="Domino-v0", entry_point="envs.domino:DominoEnv", kwargs={"n_players": 1}
+    )
     play(*[arg for arg in vars(args).values() if arg])

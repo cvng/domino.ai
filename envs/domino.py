@@ -207,7 +207,7 @@ class DominoEnv(gym.Env):
         return [seed]
 
     def step(self, action: int):
-        from agents import RandomAgent
+        from agents.random_agent import RandomAgent
 
         assert self.current_turn == 0
         observation, reward, done, info = self._play(action)

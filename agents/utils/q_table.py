@@ -1,6 +1,6 @@
 import sqlite3
 
-from domino import pack
+from envs.domino import pack
 
 DB = sqlite3.connect("q_table.db")
 
