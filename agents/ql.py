@@ -12,6 +12,8 @@ class QLAgent(BaseAgent):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.compiled = True
+
         self.action_history = []
         self.observation_history = []
         self.next_observation_history = []

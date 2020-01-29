@@ -49,7 +49,7 @@ class BaseAgent(Agent):
         return table, hand
 
     def forward(self, observation):
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def backward(self, reward, terminal):
         pass

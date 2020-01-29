@@ -1,19 +1,14 @@
 import argparse
-import logging
 
 from agents.utils.q_table import DB, create_q_values_table
 
-logger = logging.getLogger(__name__)
-
-logging.basicConfig(level="INFO")
-
 
 def reset_q_table(force=True):
-    DB.set_trace_callback(logger.info)
+    print("Creating q_values table.")
 
-    result = create_q_values_table(drop_if_exists=force)
+    DB.set_trace_callback(lambda x: print(x.strip()))
 
-    logger.info("OK! result=%s" % result)
+    create_q_values_table(drop_if_exists=force)
 
 
 if __name__ == "__main__":
