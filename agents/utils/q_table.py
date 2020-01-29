@@ -9,18 +9,19 @@ action_space_n = len(pack) * 2 + 1
 action_columns = ", ".join([f"action_{action}" for action in range(action_space_n + 1)])
 
 
-def create_q_values_table():
+def create_q_values_table(drop_if_exists=True):
     global action_columns
     action_columns = ", ".join(
         [f"{action} REAL NOT NULL DEFAULT 0.0" for action in action_columns.split(", ")]
     )
 
     with DB:
-        DB.execute(
-            """
-            DROP TABLE IF EXISTS q_values;
-            """
-        )
+        if drop_if_exists:
+            DB.execute(
+                """
+                DROP TABLE IF EXISTS q_values;
+                """
+            )
         DB.execute(
             f"""
             CREATE TABLE IF NOT EXISTS q_values (observation INTEGER PRIMARY KEY NOT NULL, {action_columns});
@@ -90,7 +91,3 @@ def select_max_action(observation):
         ).fetchone()
     if result:
         return result.index(max(result))
-
-
-if __name__ == "__main__":
-    create_q_values_table()
